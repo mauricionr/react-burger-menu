@@ -2,20 +2,21 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Radium from 'radium';
+import ConfiguredRadium from './ConfiguredRadium';
 import baseStyles from './baseStyles';
 import BurgerIcon from './BurgerIcon';
 import CrossIcon from './CrossIcon';
 
 export default (styles) => {
 
-  return Radium(React.createClass({
+  return ConfiguredRadium(React.createClass({
 
     propTypes: {
-      customBurgerIcon: React.PropTypes.string,
-      customCrossIcon: React.PropTypes.string,
+      customBurgerIcon: React.PropTypes.element,
+      customCrossIcon: React.PropTypes.element,
       id: React.PropTypes.string,
       isOpen: React.PropTypes.bool,
+      noOverlay: React.PropTypes.bool,
       onStateChange: React.PropTypes.func,
       outerContainerId: React.PropTypes.string,
       pageWrapId: React.PropTypes.string,
@@ -25,13 +26,11 @@ export default (styles) => {
     },
 
     toggleMenu(isOpenVal) {
-      // Disregard arg if not a boolean.
-      isOpenVal = typeof isOpenVal === 'boolean' ? isOpenVal : undefined;
-
       // Order important: handle wrappers before setting sidebar state.
       this.applyWrapperStyles();
 
-      const newState = { isOpen: isOpenVal ? isOpenVal : !this.state.isOpen };
+      // Disregard isOpenVal if not a boolean.
+      const newState = { isOpen: typeof isOpenVal === 'boolean' ? isOpenVal : !this.state.isOpen };
       this.setState(newState, this.props.onStateChange.bind(null, newState));
     },
 
@@ -62,20 +61,20 @@ export default (styles) => {
     // Throws and returns if the required external elements don't exist,
     // which means any external page animations won't be applied.
     handleExternalWrapper(id, wrapperStyles, set) {
-      let html = document.querySelector('html');
-      let body = document.querySelector('body');
-      let wrapper = document.getElementById(id);
+      const html = document.querySelector('html');
+      const body = document.querySelector('body');
+      const wrapper = document.getElementById(id);
 
       if (!wrapper) {
         console.error("Element with ID '" + id + "' not found");
         return;
       }
 
-      wrapperStyles = wrapperStyles(this.state.isOpen, this.props.width, this.props.right);
+      const builtStyles = wrapperStyles(this.state.isOpen, this.props.width, this.props.right);
 
-      for (let prop in wrapperStyles) {
-        if (wrapperStyles.hasOwnProperty(prop)) {
-          wrapper.style[prop] = set ? wrapperStyles[prop] : '';
+      for (const prop in builtStyles) {
+        if (builtStyles.hasOwnProperty(prop)) {
+          wrapper.style[prop] = set ? builtStyles[prop] : '';
         }
       }
 
@@ -87,7 +86,7 @@ export default (styles) => {
 
     // Builds styles incrementally for a given element.
     getStyles(el, index) {
-      let propName = 'bm' + el.replace(el.charAt(0), el.charAt(0).toUpperCase());
+      const propName = 'bm' + el.replace(el.charAt(0), el.charAt(0).toUpperCase());
 
       // Set base styles.
       let output = baseStyles[el] ? [baseStyles[el](this.state.isOpen, this.props.width, this.props.right)] : [];
@@ -115,9 +114,8 @@ export default (styles) => {
 
     getDefaultProps() {
       return {
-        customBurgerIcon: '',
-        customCrossIcon: '',
         id: '',
+        noOverlay: false,
         onStateChange: () => {},
         outerContainerId: '',
         pageWrapId: '',
@@ -163,17 +161,18 @@ export default (styles) => {
 
     componentDidUpdate() {
       if (styles.svg && this.isMounted()) {
-        // Snap.svg workaround for Webpack using imports-loader (https://github.com/webpack/imports-loader).
-        let snap;
-        try {
-          snap = require('imports?this=>window,fix=>module.exports=0!snapsvg/dist/snap.svg.js');
-        } catch(e) {
-          snap = require('snapsvg');
-        }
+        const morphShape = ReactDOM.findDOMNode(this, 'bm-morph-shape');
+        let Snap, s, path;
 
-        let morphShape = ReactDOM.findDOMNode(this, 'bm-morph-shape');
-        let s = snap(morphShape);
-        let path = s.select('path');
+        try {
+          // This will throw with Webpack.
+          Snap = require('snapsvg');
+          s = Snap(morphShape);
+          path = s.select('path');
+        } catch (e) {
+          console.warn('It looks like you might be using Webpack. Unfortunately, Elastic and Bubble are not currently supported with Webpack builds due to their Snap.svg dependency. See https://github.com/adobe-webplatform/Snap.svg/issues/341 for more info.');
+          return;
+        }
 
         if (this.state.isOpen) {
           // Animate SVG path.
@@ -189,22 +188,21 @@ export default (styles) => {
 
     componentWillReceiveProps(nextProps) {
       // Allow open state to be controlled by props.
-      if (typeof nextProps.isOpen === 'boolean') {
+      if (typeof nextProps.isOpen === 'boolean' && nextProps.isOpen !== this.props.isOpen) {
         this.toggleMenu(nextProps.isOpen);
       }
     },
 
     render() {
-      let items, svg;
+      let items, svg, overlay;
 
       // Add styles to user-defined menu items.
       if (this.props.children) {
         items = React.Children.map(this.props.children, (item, index) => {
-          let extraProps = {
+          const extraProps = {
             key: index,
             style: this.getStyles('item', index)
           };
-
           return React.cloneElement(item, extraProps);
         });
       }
@@ -220,9 +218,13 @@ export default (styles) => {
         );
       }
 
+      if (!this.props.noOverlay) {
+        overlay = <div className="bm-overlay" onClick={ this.toggleMenu } style={ this.getStyles('overlay') }></div>;
+      }
+
       return (
         <div>
-          <div className="bm-overlay" onClick={ this.toggleMenu } style={ this.getStyles('overlay') }></div>
+          { overlay }
           <div id={ this.props.id } className={ "bm-menu-wrap" } style={ this.getStyles('menuWrap') }>
             { svg }
             <div className="bm-menu" style={ this.getStyles('menu') } >
@@ -231,10 +233,10 @@ export default (styles) => {
               </nav>
             </div>
             <div style={ this.getStyles('closeButton') }>
-              <CrossIcon onClick={ this.toggleMenu } styles={ this.props.styles } image={ this.props.customCrossIcon } />
+              <CrossIcon onClick={ this.toggleMenu } styles={ this.props.styles } customIcon={ this.props.customCrossIcon } />
             </div>
           </div>
-          <BurgerIcon onClick={ this.toggleMenu } styles={ this.props.styles } image={ this.props.customBurgerIcon } />
+          <BurgerIcon onClick={ this.toggleMenu } styles={ this.props.styles } customIcon={ this.props.customBurgerIcon } />
         </div>
       );
     }

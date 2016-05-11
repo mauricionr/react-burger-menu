@@ -1,12 +1,12 @@
 'use strict';
 
 import React from 'react';
-import Radium from 'radium';
+import ConfiguredRadium from './ConfiguredRadium';
 
-let CrossIcon = Radium(React.createClass({
+const CrossIcon = ConfiguredRadium(React.createClass({
 
   propTypes: {
-    image: React.PropTypes.string,
+    customIcon: React.PropTypes.element,
     styles: React.PropTypes.object
   },
 
@@ -21,7 +21,6 @@ let CrossIcon = Radium(React.createClass({
 
   getDefaultProps() {
     return {
-      image: '',
       styles: {}
     };
   },
@@ -50,8 +49,12 @@ let CrossIcon = Radium(React.createClass({
       outline: 'none'
     };
 
-    if (this.props.image) {
-      icon = <img src={ this.props.image } alt="Cross icon" className="bm-cross" style={ [{width: '100%', height: '100%'}, this.props.styles.bmCross] }/>;
+    if (this.props.customIcon) {
+      let extraProps = {
+        className: 'bm-cross',
+        style: [{width: '100%', height: '100%'}, this.props.styles.bmCross]
+      };
+      icon = React.cloneElement(this.props.customIcon, extraProps);
     } else {
       icon = (
         <span style={ [{position: 'absolute', top: '6px', right: '14px'}] }>

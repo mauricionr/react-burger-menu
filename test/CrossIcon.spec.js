@@ -71,7 +71,7 @@ describe('CrossIcon component', () => {
         height: 14,
         transform: 'rotate(45deg)'
       };
-      expect(icon.props.children[0].props.style).to.deep.equal(expected);
+      expect(icon.props.children[0].props.style).to.contain(expected);
     });
 
     it('can be styled with props', () => {
@@ -81,11 +81,11 @@ describe('CrossIcon component', () => {
       expect(icon.props.children[1].props.style.background).to.equal('red');
     });
 
-    it('can be a custom image', () => {
-      const path = 'icon.jpg';
-      component = createShallowComponent(<CrossIcon image={ path } />);
+    it('can be a custom element', () => {
+      const element = <img src="icon.jpg" />;
+      component = createShallowComponent(<CrossIcon customIcon={ element } />);
       expect(component.props.children[0].type).to.equal('img');
-      expect(component.props.children[0].props.src).to.equal(path);
+      expect(component.props.children[0].props.src).to.equal('icon.jpg');
     });
   });
 

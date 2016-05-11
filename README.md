@@ -38,7 +38,7 @@ npm run tdd
 
 The easiest way to use react-burger-menu is to install it from npm and include it in your own React build process (using [Browserify](http://browserify.org), [Webpack](http://webpack.github.io/), etc).
 
-*If you're using Webpack, you'll need to add `imports-loader` to your dependencies.*
+*WARNING: Elastic and Bubble are not currently supported with Webpack builds due to their Snap.svg dependency.*
 
 You can also use the standalone build by including `dist/react-burger-menu.js` in your page. If you use this, make sure you have already included React, and it is available as a global variable.
 
@@ -173,16 +173,24 @@ var isMenuOpen = function(state) {
 <Menu onStateChange={ isMenuOpen } />
 ```
 
-#### Custom icons
+#### Overlay
 
-You can replace the default bars that make up the burger and cross icons with images. Pass the image paths as the `customBurgerIcon` and `customCrossIcon` props respectively.
+You can turn off the default overlay with `noOverlay`.
 
-```javascript
-<Menu customBurgerIcon={ 'img/icon.svg' } />
-<Menu customCrossIcon={ 'img/cross.svg' } />
+``` javascript
+<Menu noOverlay />
 ```
 
-You should adjust their size using the `.bm-burger-button` and `.bm-cross-button` classes, but the image itself will have the class `.bm-icon` or `.bm-cross` if you need to access it directly.
+#### Custom icons
+
+You can replace the default bars that make up the burger and cross icons with custom `ReactElement`s. Pass them as the `customBurgerIcon` and `customCrossIcon` props respectively.
+
+```javascript
+<Menu customBurgerIcon={ <img src="img/icon.svg" /> } />
+<Menu customCrossIcon={ <img src="img/cross.svg" /> } />
+```
+
+You should adjust their size using the `.bm-burger-button` and `.bm-cross-button` classes, but the element itself will have the class `.bm-icon` or `.bm-cross` if you need to access it directly.
 
 #### Custom ID
 
